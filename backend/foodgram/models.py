@@ -9,28 +9,6 @@ User = get_user_model()
 #     pass
 
 
-class UserSubscribe(models.Model):
-    name = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Пользователь'
-    )
-    subscribed_to = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Подписан на'
-    )
-
-    class Meta:
-        ordering = ('name', 'subscribed_to')
-        default_related_name = 'subscription'
-        constraints = [
-            models.UniqueConstraint(
-                fields=('name', 'subscribed_to'), name='user_subscription'
-            )
-        ]
-
-
 class Tag(models.Model):
     name = models.CharField(
         max_length=256,
@@ -49,7 +27,10 @@ class Ingredient(models.Model):
         unique=True,
         verbose_name='Название'
     )
-    measurement_unit = models.CharField(verbose_name='Единица измерения')
+    measurement_unit = models.CharField(
+        max_length=256,
+        verbose_name='Единица измерения'
+    )
     amount = models.IntegerField(verbose_name='Количество')
 
     class Meta:
@@ -77,10 +58,10 @@ class Recipe(models.Model):
     text = models.TextField(verbose_name='Описание')
     ingredient = models.ManyToManyField(
         Ingredient,
-        through='Ingredient',
+        through='RecipeIngredient',
         verbose_name='Ингридиенты'
     )
-    tag = models.ManyToManyField(Tag, through='Tag', verbose_name='Теги')
+    tag = models.ManyToManyField(Tag, through='RecipeTag', verbose_name='Теги')
     cooking_time = models.SmallIntegerField(verbose_name='Время приготовления')
 
     class Meta:
@@ -93,17 +74,26 @@ class Recipe(models.Model):
         return self.name[:50]
 
 
-class ShopingCart(models.Model):
-    user = models.ForeignKey(
+class UserSubscribe(models.Model):
+    name = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         verbose_name='Пользователь'
     )
-    recipe = models.ManyToManyField(
+    subscribed_to = models.ForeignKey(
         Recipe,
-        through='Recipe',
-        verbose_name='Рецепт'
+        on_delete=models.CASCADE,
+        verbose_name='Подписан на'
     )
+
+    class Meta:
+        ordering = ('name', 'subscribed_to')
+        default_related_name = 'subscription'
+        constraints = [
+            models.UniqueConstraint(
+                fields=('name', 'subscribed_to'), name='user_subscription'
+            )
+        ]
 
 
 class RecipeTag(models.Model):
