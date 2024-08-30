@@ -31,7 +31,6 @@ class Ingredient(models.Model):
         max_length=256,
         verbose_name='Единица измерения'
     )
-    amount = models.IntegerField(verbose_name='Количество')
 
     class Meta:
         verbose_name = 'Ингредиент'
@@ -63,6 +62,7 @@ class Recipe(models.Model):
     )
     tag = models.ManyToManyField(Tag, through='RecipeTag', verbose_name='Теги')
     cooking_time = models.SmallIntegerField(verbose_name='Время приготовления')
+    score = models.SmallIntegerField(verbose_name='В избранном')
 
     class Meta:
         default_related_name = 'recipe'
@@ -107,6 +107,7 @@ class RecipeTag(models.Model):
 class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+    amount = models.IntegerField(verbose_name='Количество')
 
     def __str__(self):
         return f'{self.recepe} {self.ingredient}'
