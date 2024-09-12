@@ -1,12 +1,7 @@
-from django.db import models
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import AbstractUser
+from django.db import models
 
 User = get_user_model()
-
-
-# class User(AbstractUser):
-#     pass
 
 
 class Tag(models.Model):
@@ -62,7 +57,6 @@ class Recipe(models.Model):
     )
     tag = models.ManyToManyField(Tag, through='RecipeTag', verbose_name='Теги')
     cooking_time = models.SmallIntegerField(verbose_name='Время приготовления')
-    score = models.SmallIntegerField(verbose_name='В избранном')
 
     class Meta:
         default_related_name = 'recipe'
