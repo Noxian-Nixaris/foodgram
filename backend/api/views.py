@@ -28,11 +28,6 @@ class UsersViewSet(DjoserUserViewSet):
             queryset = queryset.filter(pk=user.pk)
         return queryset
 
-    # def get_serializer_class(self):
-    #     if self.action in ['list', 'retrieve']:
-    #         return UserSerializer
-    #     return super().get_serializer_class()
-
     @action(
         detail=False, methods=['put', 'delete'],
         url_path='me/avatar', permission_classes=[IsAuthenticated])

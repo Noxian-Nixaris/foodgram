@@ -19,8 +19,11 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class IngredientRecipeSerializer(serializers.ModelSerializer):
-    amount = serializers.SerializerMethodField()
-
+    amount = serializers.SlugRelatedField(
+        slug_field='amount',
+        queryset=Recipe.objects.all()
+    )
+    
     class Meta:
         model = Ingredient
         fields = ('id', 'name', 'measurement_unit', 'amount')
