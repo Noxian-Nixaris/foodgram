@@ -16,11 +16,11 @@ class RecipeAdmin(admin.ModelAdmin):
     model = Recipe
     list_display = ('id', 'name', 'author', 'get_tag')
     list_editable = ('name',)
-    list_filter = ('tag',)
+    list_filter = ('tags',)
     search_fields = ('name', 'author')
 
     def get_tag(self, obj):
-        return [tag.name for tag in obj.tag.all()]
+        return [tag.name for tag in obj.tags.all()]
 
 
 class TagAdmin(admin.ModelAdmin):

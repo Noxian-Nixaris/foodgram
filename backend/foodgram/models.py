@@ -1,12 +1,15 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
+from core.validators import time_check
+from core.constants import MAX_DISPLAY_LENGTH, MAX_LENGTH
+
 User = get_user_model()
 
 
 class Tag(models.Model):
     name = models.CharField(
-        max_length=256,
+        max_length=MAX_LENGTH,
         unique=True,
         verbose_name='Название'
     )
@@ -18,12 +21,12 @@ class Tag(models.Model):
 
 class Ingredient(models.Model):
     name = models.CharField(
-        max_length=256,
+        max_length=MAX_LENGTH,
         unique=True,
         verbose_name='Название'
     )
     measurement_unit = models.CharField(
-        max_length=256,
+        max_length=MAX_LENGTH,
         verbose_name='Единица измерения'
     )
 
@@ -37,7 +40,7 @@ class Ingredient(models.Model):
 
 
 class Recipe(models.Model):
-    name = models.CharField(max_length=256, verbose_name='Название')
+    name = models.CharField(max_length=MAX_LENGTH, verbose_name='Название')
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -50,44 +53,29 @@ class Recipe(models.Model):
         verbose_name='Изображение'
     )
     text = models.TextField(verbose_name='Описание')
-    ingredient = models.ManyToManyField(
+    ingredients = models.ManyToManyField(
         Ingredient,
         through='RecipeIngredient',
         verbose_name='Ингридиенты'
     )
-    tag = models.ManyToManyField(Tag, through='RecipeTag', verbose_name='Теги')
-    cooking_time = models.SmallIntegerField(verbose_name='Время приготовления')
+    tags = models.ManyToManyField(
+        Tag,
+        through='RecipeTag',
+        verbose_name='Теги'
+    )
+    cooking_time = models.SmallIntegerField(
+        validators=[time_check],
+        verbose_name='Время приготовления'
+    )
 
     class Meta:
-        default_related_name = 'recipe'
+        default_related_name = 'recipes'
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
         ordering = ('name', 'id')
 
     def __str__(self):
-        return self.name[:50]
-
-
-class UserSubscribe(models.Model):
-    name = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Пользователь'
-    )
-    subscribed_to = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        verbose_name='Подписан на'
-    )
-
-    class Meta:
-        ordering = ('name', 'subscribed_to')
-        default_related_name = 'subscription'
-        constraints = [
-            models.UniqueConstraint(
-                fields=('name', 'subscribed_to'), name='user_subscription'
-            )
-        ]
+        return self.name[:MAX_DISPLAY_LENGTH]
 
 
 class RecipeTag(models.Model):
@@ -101,7 +89,50 @@ class RecipeTag(models.Model):
 class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
-    amount = models.IntegerField(verbose_name='Количество')
+    amount = models.IntegerField(
+        null=True, verbose_name='Количество'
+    )
+
+    class Meta:
+        default_related_name = 'recipes_ingredients'
 
     def __str__(self):
         return f'{self.recepe} {self.ingredient}'
+
+
+class Favorite(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE
+    )
+    favorite = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE
+    )
+
+    class Meta:
+        default_related_name = 'favotrite'
+        constraints = [
+            models.UniqueConstraint(
+                fields=('user', 'favorite'), name='favorite_recipe'
+            )
+        ]
+
+
+class ShoppingCart(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE
+    )
+
+    class Meta:
+        default_related_name = 'shopping_cart'
+        constraints = [
+            models.UniqueConstraint(
+                fields=('user', 'recipe'), name='shopping_cart'
+            )
+        ]

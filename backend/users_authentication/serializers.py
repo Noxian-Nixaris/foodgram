@@ -5,6 +5,7 @@ from djoser.serializers import UserSerializer as BaseUserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
+
 User = get_user_model()
 
 
@@ -20,16 +21,3 @@ class AvatarSerializer(BaseUserSerializer):
         if avatar is None:
             raise serializers.ValidationError()
         return data
-
-
-class UserSerializer(BaseUserSerializer):
-    is_subscribed = serializers.BooleanField(default=False, read_only=True)
-    avatar = Base64ImageField(required=False, allow_null=True)
-
-    class Meta(BaseUserSerializer.Meta):
-        model = User
-        fields = (
-            'email', 'id', 'username',
-            'first_name', 'last_name',
-            'is_subscribed', 'avatar'
-        )

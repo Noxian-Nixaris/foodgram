@@ -1,12 +1,15 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.db import models
+
+from core.constants import MAX_EMAIL_LENGTH, MAX_NAME_LENGTH
 
 
 class User(AbstractUser):
-    first_name = models.CharField(max_length=150, blank=False)
-    last_name = models.CharField(max_length=150, blank=False)
+    first_name = models.CharField(max_length=MAX_NAME_LENGTH, blank=False)
+    last_name = models.CharField(max_length=MAX_NAME_LENGTH, blank=False)
     email = models.EmailField(
-        blank=False, max_length=254, verbose_name='email address'
+        blank=False, max_length=MAX_EMAIL_LENGTH, verbose_name='email address'
     )
     avatar = models.ImageField(
         upload_to='user_authentication/images/',
@@ -16,15 +19,29 @@ class User(AbstractUser):
     )
     REQUIRED_FIELDS = ('email', 'first_name', 'last_name')
 
+    class Meta:
+        ordering = ('username',)
+
 
 class UserSubscription(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='subscriptor',
+        related_name='subscriber',
     )
     subscribed = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='subscribed_to',
     )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=('user', 'subscribed'), name='subscription'
+            )
+        ]
+
+    def clean(self):
+        if self.user == self.subscribed:
+            raise ValidationError('Нельзя подписаться на самого себя')

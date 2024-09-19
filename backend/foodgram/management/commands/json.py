@@ -12,13 +12,21 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("json_to_db")
 
+    # def handle(self, *args, **options):
+    #     with open(
+    #         f'{STATIC_PASS}ingredients.json', 'r'
+    #     ) as file:
+    #         data = json.load(file)
+    #         for ingr in data:
+    #             Ingredient.objects.get_or_create(
+    #                 name=ingr['name'],
+    #                 measurement_unit=ingr['measurement_unit']
+    #             )
+
     def handle(self, *args, **options):
         with open(
             f'{STATIC_PASS}ingredients.json', 'r'
         ) as file:
             data = json.load(file)
-            for ingr in data:
-                Ingredient.objects.get_or_create(
-                    name=ingr['name'],
-                    measurement_unit=ingr['measurement_unit']
-                )
+            instance = (Ingredient(**ingr) for ingr in data)
+            Ingredient.objects.bulk_create(instance)

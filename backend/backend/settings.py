@@ -132,12 +132,16 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 6,
 }
 
-# DJOSER = {
-#     'SERIALISERS': {
-#         'user': 'users_authentication.serializers.UserSerializer',
-#         'current_user': 'users_authentication.serializers.UserSerializer',
-#     }
-# }
+DJOSER = {
+    'SERIALISERS': {
+        'user': 'users_authentication.serializers.UserSerializer',
+        'current_user': 'users_authentication.serializers.UserSerializer',
+    },
+    'PERMISSIONS': {
+        'user': ['djoser.permissions.CurrentUserOrAdminOrReadOnly'],
+        'user_list': ['djoser.permissions.CurrentUserOrAdminOrReadOnly'],
+    }
+}
 
 STATIC_URL = '/static/'
 
