@@ -1,8 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from core.validators import time_check
 from core.constants import MAX_DISPLAY_LENGTH, MAX_LENGTH
+from core.validators import time_check
 
 User = get_user_model()
 
@@ -31,6 +31,7 @@ class Ingredient(models.Model):
     )
 
     class Meta:
+        default_related_name = 'ingredients'
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
         ordering = ('name', 'id')
@@ -79,11 +80,18 @@ class Recipe(models.Model):
 
 
 class RecipeTag(models.Model):
-    recepe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f'{self.recepe} {self.tag}'
+        return f'{self.recipe} {self.tag}'
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=('recipe', 'tag'), name='tag_recipe'
+            )
+        ]
 
 
 class RecipeIngredient(models.Model):
@@ -95,9 +103,14 @@ class RecipeIngredient(models.Model):
 
     class Meta:
         default_related_name = 'recipes_ingredients'
+        constraints = [
+            models.UniqueConstraint(
+                fields=('recipe', 'ingredient'), name='ingredient_recipe'
+            )
+        ]
 
     def __str__(self):
-        return f'{self.recepe} {self.ingredient}'
+        return f'{self.recipe} {self.ingredient}'
 
 
 class Favorite(models.Model):
@@ -136,3 +149,13 @@ class ShoppingCart(models.Model):
                 fields=('user', 'recipe'), name='shopping_cart'
             )
         ]
+
+
+class ShortURL(models.Model):
+    full_url = models.URLField(unique=True)
+    short_url = models.CharField(
+        max_length=20,
+        unique=True,
+        db_index=True,
+        blank=True
+    )

@@ -1,8 +1,20 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+
+from foodgram.models import Ingredient, Recipe, RecipeIngredient, RecipeTag, Tag
 from users_authentication.models import User
 
-from foodgram.models import Ingredient, Recipe, Tag
+
+class IngredientInlineAdmin(admin.TabularInline):
+    model = RecipeIngredient
+    extra = 0
+    min_num = 1
+
+
+class TagInlineAdmin(admin.TabularInline):
+    model = RecipeTag
+    extra = 0
+    min_num = 1
 
 
 class IngredientAdmin(admin.ModelAdmin):
@@ -18,6 +30,7 @@ class RecipeAdmin(admin.ModelAdmin):
     list_editable = ('name',)
     list_filter = ('tags',)
     search_fields = ('name', 'author')
+    inlines = [IngredientInlineAdmin, TagInlineAdmin]
 
     def get_tag(self, obj):
         return [tag.name for tag in obj.tags.all()]

@@ -1,29 +1,26 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from djoser.conf import settings
 from djoser.views import UserViewSet as DjoserUserViewSet
-from rest_framework import mixins, status, viewsets
-from rest_framework import filters
-from rest_framework.viewsets import GenericViewSet
+from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.viewsets import GenericViewSet
 
 from api.serializers import (
     IngredientSerializer,
-    RecipeSerializer,
     RecipeCreateSerializer,
+    RecipeSerializer,
     ShoppingCart,
     ShortRecipeSerializer,
     SubscriptionSerializer,
     TagSerializer,
     UserSerializer
 )
+from foodgram.models import Favorite, Ingredient, Recipe, Tag
 from users_authentication.models import UserSubscription
-from users_authentication.serializers import (
-    AvatarSerializer
-)
-from foodgram.models import Ingredient, Favorite, Recipe, Tag
+from users_authentication.serializers import AvatarSerializer
+
 
 User = get_user_model()
 
@@ -124,26 +121,26 @@ class RecipesViewSet(viewsets.ModelViewSet):
             return RecipeCreateSerializer
         return RecipeSerializer
 
-    @action(
-        detail=False, methods=['get', 'post'],
-        permission_classes=[IsAuthenticated],
-    )
-    def recipe(self, request, *args, **kwargs):
-        recipe = Recipe.objects.all()
-        if request.method == "GET":
-            serializer = RecipeSerializer(
-                recipe, context={'request': request}, many=True
-            )
-            return Response(serializer.data)
-        elif request.method == "POST":
-            serializer = RecipeCreateSerializer(
-                recipe, data=request.data,
-                partial=True,
-                context={'request': request},
-            )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+    # @action(
+    #     detail=False, methods=['get', 'post'],
+    #     permission_classes=[IsAuthenticated],
+    # )
+    # def recipe(self, request, *args, **kwargs):
+    #     recipe = Recipe.objects.all()
+    #     if request.method == "GET":
+    #         serializer = RecipeSerializer(
+    #             recipe, context={'request': request}, many=True
+    #         )
+    #         return Response(serializer.data)
+    #     elif request.method == "POST":
+    #         serializer = RecipeCreateSerializer(
+    #             recipe, data=request.data,
+    #             partial=True,
+    #             context={'request': request},
+    #         )
+    #         serializer.is_valid(raise_exception=True)
+    #         serializer.save()
+    #         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
         detail=True, methods=['get'],
@@ -198,7 +195,8 @@ class RecipesViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=False, methods=['get', 'post'],
-        url_path='download_shopping_cart', permission_classes=[IsAuthenticated],
+        url_path='download_shopping_cart',
+        permission_classes=[IsAuthenticated],
     )
     def download_shopping_cart(self, request, *args, **kwargs):
         pass
