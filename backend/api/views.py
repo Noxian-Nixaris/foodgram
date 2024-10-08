@@ -280,8 +280,6 @@ class IngredientViewSet(BaseViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     pagination_class = None
-    # filter_backends = (DjangoFilterBackend,)
-    # filterset_fields = ('name',)
     ordering = ('name',)
 
     def get_queryset(self):
