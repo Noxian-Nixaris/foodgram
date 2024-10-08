@@ -9,18 +9,25 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=MAX_NAME_LENGTH, blank=False)
     last_name = models.CharField(max_length=MAX_NAME_LENGTH, blank=False)
     email = models.EmailField(
-        blank=False, max_length=MAX_EMAIL_LENGTH, verbose_name='email address'
+        blank=False,
+        max_length=MAX_EMAIL_LENGTH,
+        unique=True,
+        verbose_name='email address'
     )
     avatar = models.ImageField(
-        upload_to='user_authentication/images/',
+        upload_to='avatars/',
         null=True,
         default=None,
         verbose_name='Изображение'
     )
-    REQUIRED_FIELDS = ('email', 'first_name', 'last_name')
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
+    USERNAME_FIELD = 'email'
 
     class Meta:
         ordering = ('username',)
+
+    def __str__(self):
+        return f'{self.username}'
 
 
 class UserSubscription(models.Model):

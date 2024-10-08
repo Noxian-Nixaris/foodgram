@@ -1,7 +1,15 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from foodgram.models import Ingredient, Recipe, RecipeIngredient, RecipeTag, Tag
+from foodgram.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    RecipeTag,
+    ShoppingCart,
+    Tag
+)
 from users_authentication.models import User
 
 
@@ -27,6 +35,7 @@ class IngredientAdmin(admin.ModelAdmin):
 class RecipeAdmin(admin.ModelAdmin):
     model = Recipe
     list_display = ('id', 'name', 'author', 'get_tag')
+    readonly_fields = ('add_counter',)
     list_editable = ('name',)
     list_filter = ('tags',)
     search_fields = ('name', 'author')
@@ -34,6 +43,14 @@ class RecipeAdmin(admin.ModelAdmin):
 
     def get_tag(self, obj):
         return [tag.name for tag in obj.tags.all()]
+
+    def add_counter(self, obj):
+        return Favorite.objects.filter(favorite=obj).count()
+
+
+class FavoriteAdmin(admin.ModelAdmin):
+    model = Favorite
+    list_display = ('user', 'favorite')
 
 
 class TagAdmin(admin.ModelAdmin):
@@ -46,13 +63,21 @@ class UserAdmin(BaseUserAdmin):
     model = User
     list_display = (
         'id', 'username', 'first_name', 'last_name',
-        'email', 'is_staff', 'is_superuser'
+        'email', 'avatar', 'is_staff', 'is_superuser'
     )
     list_editable = ('first_name', 'last_name', 'is_staff', 'is_superuser')
-    list_filter = ('username', 'email')
+    search_fields = ('username', 'email')
 
 
+class ShoppingCartAdmin(admin.ModelAdmin):
+    model = ShoppingCart
+    list_display = ('user', 'recipe')
+    search_fields = ('name',)
+
+
+admin.site.register(Favorite, FavoriteAdmin)
 admin.site.register(Ingredient, IngredientAdmin)
 admin.site.register(Recipe, RecipeAdmin)
+admin.site.register(ShoppingCart, ShoppingCartAdmin)
 admin.site.register(Tag, TagAdmin)
 admin.site.register(User, UserAdmin)

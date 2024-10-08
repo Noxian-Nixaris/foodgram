@@ -15,6 +15,11 @@ class Tag(models.Model):
     )
     slug = models.SlugField(unique=True, verbose_name='Слаг')
 
+    class Meta:
+        default_related_name = 'tag'
+        verbose_name = 'Тег'
+        verbose_name_plural = 'Теги'
+
     def __str__(self):
         return self.name
 
@@ -48,7 +53,7 @@ class Recipe(models.Model):
         verbose_name='Автор'
     )
     image = models.ImageField(
-        upload_to='foodgram/images/',
+        upload_to='recipes/',
         null=True,
         default=None,
         verbose_name='Изображение'
@@ -67,6 +72,18 @@ class Recipe(models.Model):
     cooking_time = models.SmallIntegerField(
         validators=[time_check],
         verbose_name='Время приготовления'
+    )
+    is_in_shopping_cart = models.ManyToManyField(
+        User,
+        through='ShoppingCart',
+        verbose_name='Покупки',
+        related_name='is_in_shopping_cart'
+    )
+    is_favorited = models.ManyToManyField(
+        User,
+        through='Favorite',
+        verbose_name='Избранное',
+        related_name='is_favorited'
     )
 
     class Meta:
@@ -109,9 +126,6 @@ class RecipeIngredient(models.Model):
             )
         ]
 
-    def __str__(self):
-        return f'{self.recipe} {self.ingredient}'
-
 
 class Favorite(models.Model):
     user = models.ForeignKey(
@@ -130,6 +144,9 @@ class Favorite(models.Model):
                 fields=('user', 'favorite'), name='favorite_recipe'
             )
         ]
+
+    def __str__(self):
+        return f'{self.user} {self.favorite}'
 
 
 class ShoppingCart(models.Model):
@@ -152,10 +169,12 @@ class ShoppingCart(models.Model):
 
 
 class ShortURL(models.Model):
-    full_url = models.URLField(unique=True)
-    short_url = models.CharField(
-        max_length=20,
-        unique=True,
-        db_index=True,
-        blank=True
-    )
+    full_link = models.CharField(max_length=MAX_LENGTH, unique=True)
+    short_link = models.CharField(max_length=MAX_LENGTH, unique=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=('full_link', 'short_link'), name='recipe_link'
+            )
+        ]

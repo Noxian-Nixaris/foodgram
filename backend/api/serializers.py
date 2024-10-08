@@ -4,12 +4,14 @@ from djoser.serializers import UserSerializer as BaseUserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
+from core.constants import DOMAIN
 from foodgram.models import (
     Favorite,
     Ingredient,
     Recipe,
     RecipeIngredient,
     ShoppingCart,
+    ShortURL,
     Tag
 )
 from users_authentication.models import UserSubscription
@@ -45,11 +47,11 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
 
 
 class ShortRecipeSerializer(serializers.ModelSerializer):
-    image = Base64ImageField()
 
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
+        read_only_fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class UserSerializer(BaseUserSerializer):
@@ -66,9 +68,11 @@ class UserSerializer(BaseUserSerializer):
 
     def get_is_subscribed(self, obj):
         user = self.context['request'].user
-        return UserSubscription.objects.filter(
-            user=user, subscribed=obj
-        ).exists()
+        if user.is_authenticated:
+            return UserSubscription.objects.filter(
+                user=user, subscribed=obj
+            ).exists()
+        return False
 
 
 class SubscriptionSerializer(UserSerializer):
@@ -88,17 +92,56 @@ class SubscriptionSerializer(UserSerializer):
         return Recipe.objects.filter(author=obj.pk).count()
 
 
+# class SubscriptionListSerializer(UserSerializer):
+#     id = serializers.ReadOnlyField(source='subscribed.id')
+#     email = serializers.ReadOnlyField(source='subscribed.email')
+#     username = serializers.ReadOnlyField(source='subscribed.username')
+#     first_name = serializers.ReadOnlyField(source='subscribed.first_name')
+#     last_name = serializers.ReadOnlyField(source='subscribed.last_name')
+#     is_subscribed = serializers.ReadOnlyField(source='subscribed.email')
+#     recipes = ShortRecipeSerializer(many=True)
+#     recipes_count = serializers.SerializerMethodField()
+#     avatar = serializers.ReadOnlyField(source='subscribed.avatar')
+
+#     class Meta(UserSerializer.Meta):
+#         model = UserSubscription
+#         fields = [
+#             'email', 'id', 'username',
+#             'first_name', 'last_name',
+#             'is_subscribed', 'recipes',
+#             'recipes_count', 'avatar'
+#         ]
+
+#     def get_recipes_count(self, obj):
+#         return Recipe.objects.filter(author=obj.pk).count()
+
+#     def get_is_subscribed(self, obj):
+#         user = self.context['request'].user
+#         return UserSubscription.objects.filter(
+#             user=user, subscribed=obj
+#         ).exists()
+
+# class FavoriteSerializer(serializers.ModelSerializer):
+    
+#     class Meta:
+#         model = Favorite
+#         fields = (
+#             'id', 'name', 'image', 'cooking_time'
+#         )
+
 class RecipeSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
     author = UserSerializer(read_only=True)
-    ingredients = IngredientRecipeSerializer(source='recipes_ingredients', many=True, read_only=True)
+    ingredients = IngredientRecipeSerializer(
+        source='recipes_ingredients',
+        many=True,
+        read_only=True
+    )
     image = Base64ImageField()
-    is_favorite = serializers.SerializerMethodField(
-        'get_is_favorite',
+    is_favorited = serializers.SerializerMethodField(
         read_only=True
     )
     is_in_shopping_cart = serializers.SerializerMethodField(
-        'get_is_in_shopping_cart',
         read_only=True
     )
 
@@ -106,19 +149,25 @@ class RecipeSerializer(serializers.ModelSerializer):
         model = Recipe
         fields = (
             'id', 'tags', 'author', 'ingredients',
-            'is_favorite', 'is_in_shopping_cart',
+            'is_favorited', 'is_in_shopping_cart',
             'name', 'image', 'text', 'cooking_time'
         )
 
-    def get_is_favorite(self, obj):
-        return Favorite.objects.filter(
-            user=self.context['request'].user, favorite=obj.pk
-        ).exists()
+    def get_is_favorited(self, obj):
+        user = self.context['request'].user
+        if user.is_authenticated:
+            return Favorite.objects.filter(
+                user=user, favorite=obj.pk
+            ).exists()
+        return False
 
     def get_is_in_shopping_cart(self, obj):
-        return ShoppingCart.objects.filter(
-            user=self.context['request'].user, recipe=obj.pk
-        ).exists()
+        user = self.context['request'].user
+        if user.is_authenticated:
+            return ShoppingCart.objects.filter(
+                user=user, recipe=obj.pk
+            ).exists()
+        return False
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
@@ -169,11 +218,35 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         return get_object_or_404(Recipe, pk=recipe.pk)
 
     def get_is_favorite(self, obj):
-        return Favorite.objects.filter(
-            user=self.context['request'].user, favorite=obj.pk
-        ).exists()
+        user = self.context['request'].user
+        if user.is_authenticated:
+            return Favorite.objects.filter(
+                user=user, favorite=obj.pk
+            ).exists()
+        return False
 
     def get_is_in_shopping_cart(self, obj):
-        return ShoppingCart.objects.filter(
-            user=self.context['request'].user, recipe=obj.pk
-        ).exists()
+        user = self.context['request'].user
+        if user.is_authenticated:
+            return ShoppingCart.objects.filter(
+                user=user, recipe=obj.pk
+            ).exists()
+        return False
+
+
+class ShortURLSerializer(serializers.ModelSerializer):
+    short_link = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ShortURL
+        fields = ('short_link',)
+
+    def get_short_link(self, obj):
+        return f'{DOMAIN}s/{obj.short_link}'
+
+    def to_representation(self, instance):
+        fields = self._readable_fields
+        for field in fields:
+            if field.field_name == 'short_link':
+                field.field_name = 'short-link'
+        return super().to_representation(instance)

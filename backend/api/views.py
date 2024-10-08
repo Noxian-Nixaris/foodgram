@@ -1,9 +1,16 @@
+import random
+
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
+from django_filters.rest_framework.backends import DjangoFilterBackend
+from django.http import FileResponse, Http404
+from django.shortcuts import get_object_or_404, redirect
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import (
+    IsAuthenticated,
+)
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
@@ -13,11 +20,16 @@ from api.serializers import (
     RecipeSerializer,
     ShoppingCart,
     ShortRecipeSerializer,
+    ShortURLSerializer,
     SubscriptionSerializer,
     TagSerializer,
     UserSerializer
 )
-from foodgram.models import Favorite, Ingredient, Recipe, Tag
+from core.constants import CHARACTERS, DOMAIN, URL_LENGTH
+from core.filters import IngredientFilter
+from foodgram.models import (
+    Favorite, Ingredient, Recipe, RecipeIngredient, ShortURL, Tag
+)
 from users_authentication.models import UserSubscription
 from users_authentication.serializers import AvatarSerializer
 
@@ -56,12 +68,13 @@ class UsersViewSet(DjoserUserViewSet):
 
     @action(
         detail=False, methods=['get'],
-        url_path='me', permission_classes=[IsAuthenticated],
-        serializer_class=UserSerializer)
+        url_path='me', permission_classes=[IsAuthenticated]
+    )
     def me(self, request, *args, **kwargs):
         pk = request.user.pk
         object = get_object_or_404(User, pk=pk)
-        serializer = UserSerializer(object)
+        serializer = UserSerializer(
+            object, partial=True, context={'request': request})
         return Response(serializer.data)
 
     @action(
@@ -70,10 +83,14 @@ class UsersViewSet(DjoserUserViewSet):
     )
     def show_subscriptions(self, request, *args, **kwargs):
         user = request.user
-        object = User.objects.filter(subscribed_to__user=user)
+        objects = UserSubscription.objects.filter(user=user)
+        queryset = [object.subscribed for object in objects]
+        paginator = PageNumberPagination()
+        paginated_queryset = paginator.paginate_queryset(queryset, request)
         serializer = SubscriptionSerializer(
-            object, context={'request': request}, many=True
+            paginated_queryset, context={'request': request}, many=True,
         )
+        serializer = paginator.get_paginated_response(serializer.data)
         return Response(serializer.data)
 
     @action(
@@ -85,10 +102,10 @@ class UsersViewSet(DjoserUserViewSet):
         sub = get_object_or_404(User, pk=self.kwargs['id'])
         if request.method == "POST":
             serializer = SubscriptionSerializer(
-                user, data=request.data, partial=True,
+                sub, data=request.data, partial=True,
                 context={'request': request})
             serializer.is_valid(raise_exception=True)
-            UserSubscription.objects.create(user=user, subscribed=sub)
+            UserSubscription.objects.get_or_create(user=user, subscribed=sub)
             return Response(serializer.data, status=status.HTTP_200_OK)
         elif request.method == "DELETE":
             subscribe = UserSubscription.objects.filter(
@@ -96,6 +113,22 @@ class UsersViewSet(DjoserUserViewSet):
             )
             subscribe.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # @action(
+    #     detail=False, methods=['get'],
+    #     url_path='favorites', permission_classes=[IsAuthenticated],
+    # )
+    # def show_favorite(self, request, *args, **kwargs):
+    #     user = request.user
+    #     objects = Favorite.objects.filter(user=user)
+    #     queryset = [object.favorite for object in objects]
+    #     paginator = PageNumberPagination()
+    #     paginated_queryset = paginator.paginate_queryset(queryset, request)
+    #     serializer = ShortRecipeSerializer(
+    #         paginated_queryset, context={'request': request}, many=True,
+    #     )
+    #     serializer = paginator.get_paginated_response(serializer.data)
+    #     return Response(serializer.data)
 
 
 class BaseViewSet(
@@ -113,13 +146,24 @@ class TagViewSet(BaseViewSet):
 
 
 class RecipesViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filterset_fields = ('is_in_shopping_cart', 'is_favorited')
 
     def get_serializer_class(self):
         if self.action in ['create', 'update']:
             return RecipeCreateSerializer
         return RecipeSerializer
+
+    def get_queryset(self):
+        params = self.request.query_params
+        queryset = Recipe.objects.all()
+        if 'tags' in params:
+            params = dict(params).get('tags')
+            tags = Tag.objects.filter(slug__in=params)
+            queryset = queryset.filter(tags__in=tags)
+        return queryset
+
 
     # @action(
     #     detail=False, methods=['get', 'post'],
@@ -144,10 +188,25 @@ class RecipesViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=True, methods=['get'],
-        url_path='get-link', permission_classes=[IsAuthenticated],
+        url_path='get-link',  # permission_classes=[IsAuthenticated],
     )
     def get_link(self, request, *args, **kwargs):
-        pass
+        full_link = f'{DOMAIN}recipes/{self.kwargs["pk"]}'
+        try:
+            link = get_object_or_404(ShortURL, full_link=full_link)
+        except Http404:
+            short_links = ShortURL.objects.all()
+            while True:
+                short_link = ''.join(random.choices(CHARACTERS, k=URL_LENGTH))
+                if not short_links.filter(short_link=short_link):
+                    break
+            link = ShortURL.objects.create(
+                short_link=short_link,
+                full_link=full_link
+            )
+        serializer = ShortURLSerializer(link)
+
+        return Response(serializer.data)
 
     @action(
         detail=True, methods=['post', 'delete'],
@@ -164,7 +223,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
                 partial=True
             )
             serializer.is_valid(raise_exception=True)
-            ShoppingCart.objects.create(user=user, recipe=recipe)
+            ShoppingCart.objects.get_or_create(user=user, recipe=recipe)
             return Response(serializer.data)
         elif request.method == "DELETE":
             favorite = get_object_or_404(
@@ -186,7 +245,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
                 context={'request': request},
             )
             serializer.is_valid(raise_exception=True)
-            Favorite.objects.create(user=user, favorite=recipe)
+            Favorite.objects.get_or_create(user=user, favorite=recipe)
             return Response(serializer.data)
         elif request.method == "DELETE":
             favorite = get_object_or_404(Favorite, user=user, favorite=recipe)
@@ -194,18 +253,52 @@ class RecipesViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
-        detail=False, methods=['get', 'post'],
+        detail=False, methods=['get'],
         url_path='download_shopping_cart',
         permission_classes=[IsAuthenticated],
     )
     def download_shopping_cart(self, request, *args, **kwargs):
-        pass
+        user = request.user.username
+        cart = ShoppingCart.objects.filter(user=request.user)
+        ingreds = {}
+        for recipe in cart:
+            query = RecipeIngredient.objects.filter(recipe=recipe.recipe)
+            for recipe in query:
+                ingr_name = recipe.ingredient.name
+                ingr_amount = recipe.amount
+                if ingr_name not in ingreds:
+                    ingreds[ingr_name] = ingr_amount
+                else:
+                    ingreds[ingr_name] = ingreds[ingr_name] + ingr_amount
+        with open(f'data/{user}.txt', 'w') as file:
+            for items in ingreds:
+                file.write(f'{items} {ingreds.get(items)}' + '\n')
+        return FileResponse(open(f'data/{user}.txt', 'rb'))
 
 
 class IngredientViewSet(BaseViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     pagination_class = None
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
+    # filter_backends = (DjangoFilterBackend,)
+    # filterset_fields = ('name',)
     ordering = ('name',)
+
+    def get_queryset(self):
+        params = self.request.query_params
+        queryset = Ingredient.objects.all()
+        if 'name' in params:
+            params = dict(params).get('name')[0]
+            queryset = queryset.filter(name__istartswith=params)
+        return queryset
+
+
+def redirection(request, short_link):
+    try:
+        full_link = get_object_or_404(
+            ShortURL, short_link=short_link
+        ).full_link
+        print(full_link)
+        return redirect(full_link)
+    except Http404:
+        return Response(status=status.HTTP_404_NOT_FOUND)

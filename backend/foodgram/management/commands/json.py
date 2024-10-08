@@ -1,10 +1,11 @@
 import json
 
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
-from foodgram.models import Ingredient
+from foodgram.models import Ingredient, Tag
 
-STATIC_PASS = '../data/'
+User = get_user_model()
 
 
 class Command(BaseCommand):
@@ -12,21 +13,13 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("json_to_db")
 
-    # def handle(self, *args, **options):
-    #     with open(
-    #         f'{STATIC_PASS}ingredients.json', 'r'
-    #     ) as file:
-    #         data = json.load(file)
-    #         for ingr in data:
-    #             Ingredient.objects.get_or_create(
-    #                 name=ingr['name'],
-    #                 measurement_unit=ingr['measurement_unit']
-    #             )
-
     def handle(self, *args, **options):
-        with open(
-            f'{STATIC_PASS}ingredients.json', 'r'
-        ) as file:
+        with open('data/ingredients.json', 'r') as file:
             data = json.load(file)
             instance = (Ingredient(**ingr) for ingr in data)
             Ingredient.objects.bulk_create(instance)
+
+        with open('data/tags.json', 'r') as file_tag:
+            data = json.load(file_tag)
+            instance = (Tag(**d) for d in data)
+            Tag.objects.bulk_create(instance)
