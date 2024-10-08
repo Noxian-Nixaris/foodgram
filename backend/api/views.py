@@ -5,7 +5,7 @@ from django_filters.rest_framework.backends import DjangoFilterBackend
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect
 from djoser.views import UserViewSet as DjoserUserViewSet
-from rest_framework import filters, mixins, status, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import (
@@ -13,7 +13,6 @@ from rest_framework.permissions import (
 )
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
-
 from api.serializers import (
     IngredientSerializer,
     RecipeCreateSerializer,
@@ -26,7 +25,6 @@ from api.serializers import (
     UserSerializer
 )
 from core.constants import CHARACTERS, DOMAIN, URL_LENGTH
-from core.filters import IngredientFilter
 from foodgram.models import (
     Favorite, Ingredient, Recipe, RecipeIngredient, ShortURL, Tag
 )
@@ -164,31 +162,9 @@ class RecipesViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(tags__in=tags)
         return queryset
 
-
-    # @action(
-    #     detail=False, methods=['get', 'post'],
-    #     permission_classes=[IsAuthenticated],
-    # )
-    # def recipe(self, request, *args, **kwargs):
-    #     recipe = Recipe.objects.all()
-    #     if request.method == "GET":
-    #         serializer = RecipeSerializer(
-    #             recipe, context={'request': request}, many=True
-    #         )
-    #         return Response(serializer.data)
-    #     elif request.method == "POST":
-    #         serializer = RecipeCreateSerializer(
-    #             recipe, data=request.data,
-    #             partial=True,
-    #             context={'request': request},
-    #         )
-    #         serializer.is_valid(raise_exception=True)
-    #         serializer.save()
-    #         return Response(serializer.data, status=status.HTTP_200_OK)
-
     @action(
         detail=True, methods=['get'],
-        url_path='get-link',  # permission_classes=[IsAuthenticated],
+        url_path='get-link',
     )
     def get_link(self, request, *args, **kwargs):
         full_link = f'{DOMAIN}recipes/{self.kwargs["pk"]}'

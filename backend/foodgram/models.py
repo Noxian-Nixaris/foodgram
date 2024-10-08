@@ -1,6 +1,5 @@
 from django.contrib.auth import get_user_model
 from django.db import models
-
 from core.constants import MAX_DISPLAY_LENGTH, MAX_LENGTH
 from core.validators import time_check
 

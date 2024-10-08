@@ -3,7 +3,6 @@ from django.shortcuts import get_object_or_404
 from djoser.serializers import UserSerializer as BaseUserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
-
 from core.constants import DOMAIN
 from foodgram.models import (
     Favorite,
@@ -91,43 +90,6 @@ class SubscriptionSerializer(UserSerializer):
     def get_recipes_count(self, obj):
         return Recipe.objects.filter(author=obj.pk).count()
 
-
-# class SubscriptionListSerializer(UserSerializer):
-#     id = serializers.ReadOnlyField(source='subscribed.id')
-#     email = serializers.ReadOnlyField(source='subscribed.email')
-#     username = serializers.ReadOnlyField(source='subscribed.username')
-#     first_name = serializers.ReadOnlyField(source='subscribed.first_name')
-#     last_name = serializers.ReadOnlyField(source='subscribed.last_name')
-#     is_subscribed = serializers.ReadOnlyField(source='subscribed.email')
-#     recipes = ShortRecipeSerializer(many=True)
-#     recipes_count = serializers.SerializerMethodField()
-#     avatar = serializers.ReadOnlyField(source='subscribed.avatar')
-
-#     class Meta(UserSerializer.Meta):
-#         model = UserSubscription
-#         fields = [
-#             'email', 'id', 'username',
-#             'first_name', 'last_name',
-#             'is_subscribed', 'recipes',
-#             'recipes_count', 'avatar'
-#         ]
-
-#     def get_recipes_count(self, obj):
-#         return Recipe.objects.filter(author=obj.pk).count()
-
-#     def get_is_subscribed(self, obj):
-#         user = self.context['request'].user
-#         return UserSubscription.objects.filter(
-#             user=user, subscribed=obj
-#         ).exists()
-
-# class FavoriteSerializer(serializers.ModelSerializer):
-    
-#     class Meta:
-#         model = Favorite
-#         fields = (
-#             'id', 'name', 'image', 'cooking_time'
-#         )
 
 class RecipeSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
