@@ -25,6 +25,7 @@ from api.serializers import (
     UserSerializer
 )
 from core.constants import CHARACTERS, DOMAIN, URL_LENGTH
+from core.filters import IngredientFilter
 from foodgram.models import (
     Favorite, Ingredient, Recipe, RecipeIngredient, ShortURL, Tag
 )
@@ -111,22 +112,6 @@ class UsersViewSet(DjoserUserViewSet):
             )
             subscribe.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-
-    # @action(
-    #     detail=False, methods=['get'],
-    #     url_path='favorites', permission_classes=[IsAuthenticated],
-    # )
-    # def show_favorite(self, request, *args, **kwargs):
-    #     user = request.user
-    #     objects = Favorite.objects.filter(user=user)
-    #     queryset = [object.favorite for object in objects]
-    #     paginator = PageNumberPagination()
-    #     paginated_queryset = paginator.paginate_queryset(queryset, request)
-    #     serializer = ShortRecipeSerializer(
-    #         paginated_queryset, context={'request': request}, many=True,
-    #     )
-    #     serializer = paginator.get_paginated_response(serializer.data)
-    #     return Response(serializer.data)
 
 
 class BaseViewSet(
@@ -256,15 +241,16 @@ class IngredientViewSet(BaseViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     pagination_class = None
+    filter_backends = (IngredientFilter,)
     ordering = ('name',)
 
-    def get_queryset(self):
-        params = self.request.query_params
-        queryset = Ingredient.objects.all()
-        if 'name' in params:
-            params = dict(params).get('name')[0]
-            queryset = queryset.filter(name__istartswith=params)
-        return queryset
+    # def get_queryset(self):
+    #     params = self.request.query_params
+    #     queryset = Ingredient.objects.all()
+    #     if 'name' in params:
+    #         params = dict(params).get('name')[0]
+    #         queryset = queryset.filter(name__istartswith=params)
+    #     return queryset
 
 
 def redirection(request, short_link):
