@@ -9,7 +9,7 @@ class IngredientFilter(FilterSet):
     class Meta:
         model = Ingredient
         fields = ('name',)
-    
+
     @property
     def qs(self):
         params = self.request.query_params
