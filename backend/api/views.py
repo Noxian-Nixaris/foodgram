@@ -241,16 +241,16 @@ class IngredientViewSet(BaseViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     pagination_class = None
-    filter_backends = (IngredientFilter,)
+    # filter_backends = (IngredientFilter,)
     ordering = ('name',)
 
-    # def get_queryset(self):
-    #     params = self.request.query_params
-    #     queryset = Ingredient.objects.all()
-    #     if 'name' in params:
-    #         params = dict(params).get('name')[0]
-    #         queryset = queryset.filter(name__istartswith=params)
-    #     return queryset
+    def get_queryset(self):
+        params = self.request.query_params
+        queryset = Ingredient.objects.all()
+        if 'name' in params:
+            params = dict(params).get('name')[0]
+            queryset = queryset.filter(name__istartswith=params)
+        return queryset
 
 
 def redirection(request, short_link):
