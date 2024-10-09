@@ -1,14 +1,18 @@
 [
     {
-        "name":"тег1",
-        "slug":"tag1"
+        "name":"завтрак",
+        "slug":"breakfast"
     },
     {
-        "name":"тег2",
-        "slug":"tag2"
+        "name":"обед",
+        "slug":"lunch"
     },
     {
-        "name":"тег3",
-        "slug":"tag3"
+        "name":"ужин",
+        "slug":"dinner"
+    },
+    {
+        "name":"десерт",
+        "slug":"desert"
     }
 ]
