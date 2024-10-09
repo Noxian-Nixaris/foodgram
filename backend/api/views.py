@@ -25,7 +25,7 @@ from api.serializers import (
     UserSerializer
 )
 from core.constants import CHARACTERS, DOMAIN, URL_LENGTH
-from core.filters import IngredientFilter
+# from core.filters import IngredientFilter
 from foodgram.models import (
     Favorite, Ingredient, Recipe, RecipeIngredient, ShortURL, Tag
 )
