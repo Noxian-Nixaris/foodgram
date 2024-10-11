@@ -7,4 +7,4 @@ MAX_NAME_LENGTH = 150
 MAX_EMAIL_LENGTH = 254
 CHARACTERS = 'ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz234567890'
 URL_LENGTH = 3
-DOMAIN = f'http://{os.getenv("ALLOWED_HOSTS")}/'
+DOMAIN = f'https://{os.getenv("ALLOWED_HOSTS")}/'

@@ -179,22 +179,21 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         return get_object_or_404(Recipe, pk=data.pk)
 
     def update(self, instance, validated_data):
-        if 'tags' in validated_data:
-            tags_data = validated_data.pop('tags')
-            RecipeTag.objects.filter(recipe=instance).delete()
-            instance.tags.set(tags_data)
-
-        if 'recipes_ingredients' in validated_data:
-            ingredients_data = validated_data.pop('recipes_ingredients')
-            RecipeIngredient.objects.filter(recipe=instance).delete()
-            ingredient_set = (
-                RecipeIngredient(
-                    recipe=instance,
-                    ingredient=value.get('id'),
-                    amount=value.get('amount')
-                ) for value in ingredients_data
-            )
-            RecipeIngredient.objects.bulk_create(ingredient_set)
+        tags_data = validated_data.pop('tags')
+        RecipeTag.objects.filter(recipe=instance).delete()
+        instance.tags.set(tags_data)
+        
+        ingredients_data = validated_data.pop('recipes_ingredients')
+        print(ingredients_data, '*')
+        RecipeIngredient.objects.filter(recipe=instance).delete()
+        ingredient_set = (
+            RecipeIngredient(
+                recipe=instance,
+                ingredient=value.get('id'),
+                amount=value.get('amount')
+            ) for value in ingredients_data
+        )
+        RecipeIngredient.objects.bulk_create(ingredient_set)
         Recipe.objects.filter(pk=instance.pk).update(**validated_data)
         return get_object_or_404(Recipe, pk=instance.pk)
 
