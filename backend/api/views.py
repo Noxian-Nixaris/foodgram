@@ -9,7 +9,7 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import (
-    IsAuthenticated,
+    IsAuthenticated
 )
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
@@ -25,7 +25,7 @@ from api.serializers import (
     UserSerializer
 )
 from core.constants import CHARACTERS, DOMAIN, URL_LENGTH
-# from core.filters import IngredientFilter
+from core.filters import IngredientFilter, RecipeTagFilter
 from foodgram.models import (
     Favorite, Ingredient, Recipe, RecipeIngredient, ShortURL, Tag
 )
@@ -129,23 +129,17 @@ class TagViewSet(BaseViewSet):
 
 
 class RecipesViewSet(viewsets.ModelViewSet):
+    queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ('is_in_shopping_cart', 'is_favorited')
+    filterset_class = RecipeTagFilter
+    filterset_fields = ('is_in_shopping_cart', 'is_favorited', 'tags')
+    ordered = ('name', 'id')
 
     def get_serializer_class(self):
-        if self.action in ['create', 'update']:
+        if self.action in ['create', 'partial_update']:
             return RecipeCreateSerializer
         return RecipeSerializer
-
-    def get_queryset(self):
-        params = self.request.query_params
-        queryset = Recipe.objects.all()
-        if 'tags' in params:
-            params = dict(params).get('tags')
-            tags = Tag.objects.filter(slug__in=params)
-            queryset = queryset.filter(tags__in=tags)
-        return queryset
 
     @action(
         detail=True, methods=['get'],
@@ -241,16 +235,10 @@ class IngredientViewSet(BaseViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     pagination_class = None
-    # filter_backends = (IngredientFilter,)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = IngredientFilter
+    filterset_fields = ('name',)
     ordering = ('name',)
-
-    def get_queryset(self):
-        params = self.request.query_params
-        queryset = Ingredient.objects.all()
-        if 'name' in params:
-            params = dict(params).get('name')[0]
-            queryset = queryset.filter(name__istartswith=params)
-        return queryset
 
 
 def redirection(request, short_link):
