@@ -182,7 +182,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         tags_data = validated_data.pop('tags')
         RecipeTag.objects.filter(recipe=instance).delete()
         instance.tags.set(tags_data)
-        
+
         ingredients_data = validated_data.pop('recipes_ingredients')
         print(ingredients_data, '*')
         RecipeIngredient.objects.filter(recipe=instance).delete()
