@@ -35,6 +35,18 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class IngredientRecipeSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='ingredient.id')
+    name = serializers.ReadOnlyField(source='ingredient.name')
+    measurement_unit = serializers.ReadOnlyField(
+        source='ingredient.measurement_unit'
+    )
+
+    class Meta:
+        model = RecipeIngredient
+        fields = ('id', 'name', 'measurement_unit', 'amount',)
+
+
+class IngredientRecipeCreateSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
@@ -139,8 +151,9 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(),
         many=True)
     author = UserSerializer(read_only=True)
-    ingredients = IngredientRecipeSerializer(
-        source='recipes_ingredients', many=True
+    ingredients = IngredientRecipeCreateSerializer(
+        source='recipes_ingredients',
+        many=True
     )
     image = Base64ImageField()
     is_favorite = serializers.SerializerMethodField(
@@ -184,7 +197,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         instance.tags.set(tags_data)
 
         ingredients_data = validated_data.pop('recipes_ingredients')
-        print(ingredients_data, '*')
         RecipeIngredient.objects.filter(recipe=instance).delete()
         ingredient_set = (
             RecipeIngredient(
@@ -212,6 +224,13 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 user=user, recipe=obj.pk
             ).exists()
         return False
+
+    def to_representation(self, instance):
+        data = super(RecipeCreateSerializer, self).to_representation(instance)
+        data['ingredients'] = IngredientRecipeSerializer(
+            instance.recipes_ingredients.all(), many=True
+        ).data
+        return data
 
 
 class ShortURLSerializer(serializers.ModelSerializer):
