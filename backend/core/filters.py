@@ -21,12 +21,6 @@ class IngredientFilter(FilterSet):
 
 class RecipeTagFilter(FilterSet):
 
-    tags = ModelMultipleChoiceFilter(
-        field_name='tags__slug',
-        to_field_name='slug',
-        queryset=Tag.objects.all()
-    )
-
     @property
     def qs(self):
         params = self.request.query_params
@@ -34,6 +28,13 @@ class RecipeTagFilter(FilterSet):
         user = self.request.user
         if 'is_in_shopping_cart' in params:
             queryset = queryset.filter(is_in_shopping_cart=user)
-        elif 'is_favorited' in params:
+        if 'is_favorited' in params:
             queryset = queryset.filter(is_favorited=user)
+        if 'author' in params:
+            author = params.get('author')
+            print(author)
+            queryset = queryset.filter(author=author)
+        if 'tags' in params:
+            tags = (dict(params).get('tags'))
+            queryset = queryset.filter(tags__slug__in=tags)
         return queryset

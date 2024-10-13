@@ -93,7 +93,7 @@ class Recipe(models.Model):
         default_related_name = 'recipes'
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
-        ordering = ('name', 'id')
+        ordering = ('-pub_date',)
 
     def __str__(self):
         return self.name[:MAX_DISPLAY_LENGTH]
