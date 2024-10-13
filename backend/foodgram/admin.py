@@ -8,6 +8,7 @@ from foodgram.models import (
     RecipeIngredient,
     RecipeTag,
     ShoppingCart,
+    ShortURL,
     Tag
 )
 from users_authentication.models import User
@@ -75,9 +76,15 @@ class ShoppingCartAdmin(admin.ModelAdmin):
     search_fields = ('name',)
 
 
+class ShortURLAdmin(admin.ModelAdmin):
+    model = ShortURL
+    list_display = ('full_link', 'short_link')
+
+
 admin.site.register(Favorite, FavoriteAdmin)
 admin.site.register(Ingredient, IngredientAdmin)
 admin.site.register(Recipe, RecipeAdmin)
 admin.site.register(ShoppingCart, ShoppingCartAdmin)
+admin.site.register(ShortURL, ShortURLAdmin)
 admin.site.register(Tag, TagAdmin)
 admin.site.register(User, UserAdmin)
