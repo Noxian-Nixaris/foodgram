@@ -2,3 +2,4 @@
 
 По адресу http://localhost изучите фронтенд веб-приложения, а по адресу http://localhost/api/docs/ — спецификацию API.
 
+Адрес развернутого проекта https://foodgram84-86.serveblog.net/

@@ -134,7 +134,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeTagFilter
     filterset_fields = ('is_in_shopping_cart', 'is_favorited', 'tags')
-    ordered = ('name', 'id')
+    ordered = ('-pub_date', 'id')
 
     def get_serializer_class(self):
         if self.action in ['create', 'partial_update']:

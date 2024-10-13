@@ -34,7 +34,7 @@ class IngredientAdmin(admin.ModelAdmin):
 
 class RecipeAdmin(admin.ModelAdmin):
     model = Recipe
-    list_display = ('id', 'name', 'author', 'get_tag')
+    list_display = ('id', 'name', 'author', 'get_tag', 'pub_date')
     readonly_fields = ('add_counter',)
     list_editable = ('name',)
     list_filter = ('tags',)
