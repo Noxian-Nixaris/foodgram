@@ -226,10 +226,10 @@ class RecipesViewSet(viewsets.ModelViewSet):
                     ingreds[ingr_name] = ingr_amount
                 else:
                     ingreds[ingr_name] = ingreds[ingr_name] + ingr_amount
-        with open(f'data/carts/cart-{user}.txt', 'w') as file:
+        with open(f'media/carts/cart-{user}.txt', 'w') as file:
             for items in ingreds:
                 file.write(f'{items} {ingreds.get(items)}' + '\n')
-        return FileResponse(open(f'data/carts/cart-{user}.txt', 'rb'))
+        return FileResponse(open(f'media/carts/cart-{user}.txt', 'rb'))
 
 
 class IngredientViewSet(BaseViewSet):
