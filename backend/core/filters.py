@@ -1,6 +1,6 @@
 from django_filters import FilterSet
 
-from foodgram.models import Ingredient, Recipe, Tag
+from foodgram.models import Ingredient, Recipe
 
 
 class IngredientFilter(FilterSet):
@@ -36,5 +36,5 @@ class RecipeTagFilter(FilterSet):
             queryset = queryset.filter(author=author)
         if 'tags' in params:
             tags = (dict(params).get('tags'))
-            queryset = queryset.filter(tags__slug__in=tags)
+            queryset = queryset.filter(tags__slug__in=tags).distinct()
         return queryset
