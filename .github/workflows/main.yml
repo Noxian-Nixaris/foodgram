@@ -146,7 +146,7 @@ jobs:
           sudo docker compose -f docker-compose.production.yml exec backend mkdir media/carts
           sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic
           sudo docker compose -f docker-compose.production.yml exec backend cp -r /app/collected_static/. /backend_static/static/
-          sudo docker images -qf dangling=true | xargs docker rmi
+          sudo docker rmi $(sudo docker images --filter dangling=true -q)
 
   send_message:
     runs-on: ubuntu-latest
