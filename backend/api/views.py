@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404, redirect
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
 from rest_framework.permissions import (
     IsAuthenticated
 )
@@ -26,6 +26,7 @@ from api.serializers import (
 )
 from core.constants import CHARACTERS, DOMAIN, URL_LENGTH
 from core.filters import IngredientFilter, RecipeTagFilter
+from core.pagination import PageCastomPaginator
 from foodgram.models import (
     Favorite, Ingredient, Recipe, RecipeIngredient, ShortURL, Tag
 )
@@ -84,7 +85,7 @@ class UsersViewSet(DjoserUserViewSet):
         user = request.user
         objects = UserSubscription.objects.filter(user=user)
         queryset = [object.subscribed for object in objects]
-        paginator = PageNumberPagination()
+        paginator = PageCastomPaginator()
         paginated_queryset = paginator.paginate_queryset(queryset, request)
         serializer = SubscriptionSerializer(
             paginated_queryset, context={'request': request}, many=True,
