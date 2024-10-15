@@ -23,7 +23,8 @@ from api.serializers import (
     TagSerializer,
     UserSerializer
 )
-from core.constants import CHARACTERS, DOMAIN, URL_LENGTH
+from backend.settings import DOMAIN
+from core.constants import CHARACTERS, URL_LENGTH
 from core.filters import IngredientFilter, RecipeTagFilter
 from core.pagination import PageCastomPaginator
 from foodgram.models import (

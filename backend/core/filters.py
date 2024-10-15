@@ -1,40 +1,35 @@
-from django_filters import FilterSet
+from django_filters import CharFilter, FilterSet
 
-from foodgram.models import Ingredient, Recipe
+from foodgram.models import Recipe
 
 
 class IngredientFilter(FilterSet):
-
-    class Meta:
-        model = Ingredient
-        fields = ('name',)
-
-    @property
-    def qs(self):
-        params = self.request.query_params
-        queryset = Ingredient.objects.all()
-        if 'name' in params:
-            params = dict(params).get('name')[0]
-            queryset = queryset.filter(name__istartswith=params)
-        return queryset
+    name = CharFilter(lookup_expr='istartswith')
 
 
 class RecipeTagFilter(FilterSet):
+    is_in_shopping_cart = CharFilter(
+        field_name='is_in_shopping_cart', method='filter_is_in_shopping_cart'
+    )
+    is_favorited = CharFilter(
+        field_name='is_favorited', method='filter_is_favorited'
+    )
+    author = CharFilter(field_name='author')
+    tags = CharFilter(field_name='tags', method='filter_tags')
 
-    @property
-    def qs(self):
-        params = self.request.query_params
-        queryset = Recipe.objects.all()
+    def filter_tags(self, queryset, name, value):
+        tags = dict(self.request.query_params).get('tags')
+        return queryset.filter(tags__slug__in=tags).distinct()
+
+    def filter_is_favorited(self, queryset, name, value):
         user = self.request.user
-        if 'is_in_shopping_cart' in params:
-            queryset = queryset.filter(is_in_shopping_cart=user)
-        if 'is_favorited' in params:
-            queryset = queryset.filter(is_favorited=user)
-        if 'author' in params:
-            author = params.get('author')
-            print(author)
-            queryset = queryset.filter(author=author)
-        if 'tags' in params:
-            tags = (dict(params).get('tags'))
-            queryset = queryset.filter(tags__slug__in=tags).distinct()
-        return queryset
+        return queryset.filter(is_favorited=user)
+
+    def filter_is_in_shopping_cart(self, queryset, name, value):
+        user = self.request.user
+        print(user)
+        return queryset.filter(is_in_shopping_cart=user)
+
+    class Meta:
+        model = Recipe
+        fields = ['tags', 'is_in_shopping_cart', 'is_favorited', 'author']
