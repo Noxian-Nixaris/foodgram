@@ -17,7 +17,6 @@ from foodgram.models import (
 )
 from users_authentication.models import UserSubscription
 
-
 User = get_user_model()
 
 
