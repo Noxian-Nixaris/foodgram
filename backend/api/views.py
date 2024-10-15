@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import (
     IsAuthenticated
 )
@@ -27,6 +28,7 @@ from api.serializers import (
 from api.constants import CHARACTERS, URL_LENGTH
 from api.filters import IngredientFilter, RecipeTagFilter
 from api.pagination import PageCastomPaginator
+from api.permissions import IsAutorOrReadOnly
 
 from backend.settings import DOMAIN
 from foodgram.models import (
@@ -40,6 +42,7 @@ User = get_user_model()
 class UsersViewSet(DjoserUserViewSet):
     serializer_class = UserSerializer
     ordering = ('username', 'id')
+    pagination_class = PageNumberPagination
 
     def get_queryset(self):
         return User.objects.all()
@@ -91,7 +94,7 @@ class UsersViewSet(DjoserUserViewSet):
             paginated_queryset, context={'request': request}, many=True,
         )
         serializer = paginator.get_paginated_response(serializer.data)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
         detail=True, methods=['post', 'delete'],
@@ -105,14 +108,22 @@ class UsersViewSet(DjoserUserViewSet):
                 sub, data=request.data, partial=True,
                 context={'request': request})
             serializer.is_valid(raise_exception=True)
-            UserSubscription.objects.get_or_create(user=user, subscribed=sub)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            if user == sub:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            try:
+                UserSubscription.objects.create(user=user, subscribed=sub)
+            except Exception:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == "DELETE":
-            subscribe = UserSubscription.objects.filter(
-                user=user, subscribed=sub
-            )
-            subscribe.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            try:
+                subscribe = UserSubscription.objects.filter(
+                    user=user, subscribed=sub
+                )
+                subscribe.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            except Exception:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class BaseViewSet(
@@ -131,6 +142,7 @@ class TagViewSet(BaseViewSet):
 
 class RecipesViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
+    permission_classes = (IsAutorOrReadOnly,)
     serializer_class = RecipeSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeTagFilter
@@ -180,14 +192,20 @@ class RecipesViewSet(viewsets.ModelViewSet):
                 partial=True
             )
             serializer.is_valid(raise_exception=True)
-            ShoppingCart.objects.get_or_create(user=user, recipe=recipe)
-            return Response(serializer.data)
+            try:
+                ShoppingCart.objects.create(user=user, recipe=recipe)
+            except Exception:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == "DELETE":
-            favorite = get_object_or_404(
-                ShoppingCart, user=user, recipe=recipe
-            )
-            favorite.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            try:
+                favorite = ShoppingCart.objects.filter(
+                    user=user, recipe=recipe
+                )
+                favorite.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            except Exception:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(
         detail=True, methods=['post', 'delete'],
@@ -202,12 +220,18 @@ class RecipesViewSet(viewsets.ModelViewSet):
                 context={'request': request},
             )
             serializer.is_valid(raise_exception=True)
-            Favorite.objects.get_or_create(user=user, favorite=recipe)
-            return Response(serializer.data)
+            try:
+                Favorite.objects.create(user=user, favorite=recipe)
+            except Exception:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == "DELETE":
-            favorite = get_object_or_404(Favorite, user=user, favorite=recipe)
-            favorite.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            try:
+                favorite = Favorite.objects.filter(user=user, favorite=recipe)
+                favorite.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            except Exception:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(
         detail=False, methods=['get'],

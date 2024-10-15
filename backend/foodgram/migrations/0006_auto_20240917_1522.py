@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='recipe',
             name='cooking_time',
-            field=models.SmallIntegerField(validators=[api.validators.time_check], verbose_name='Время приготовления'),
+            field=models.SmallIntegerField(validators=[api.validators.positive_check,], verbose_name='Время приготовления'),
         ),
         migrations.CreateModel(
             name='Favorite',

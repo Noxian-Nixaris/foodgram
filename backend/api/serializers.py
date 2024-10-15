@@ -88,7 +88,6 @@ class UserSerializer(BaseUserSerializer):
 
 
 class SubscriptionSerializer(UserSerializer):
-    # recipes = ShortRecipeSerializer(many=True)
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
@@ -184,6 +183,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         tags_data = validated_data.pop('tags')
+        print(tags_data)
         ingredients_data = validated_data.pop('recipes_ingredients')
         data = Recipe.objects.create(
             author=self.context['request'].user, **validated_data
@@ -202,6 +202,8 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         tags_data = validated_data.pop('tags')
+        if len(tags_data) != len(set(tags_data)):
+            print('***')
         RecipeTag.objects.filter(recipe=instance).delete()
         instance.tags.set(tags_data)
 
@@ -239,6 +241,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         data['ingredients'] = IngredientRecipeSerializer(
             instance.recipes_ingredients.all(), many=True
         ).data
+        data['tags'] = TagSerializer(instance.tags.all(), many=True).data
         return data
 
 

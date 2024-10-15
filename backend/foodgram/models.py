@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 from api.constants import MAX_DISPLAY_LENGTH, MAX_LENGTH
-from api.validators import time_check
+from api.validators import positive_check
 
 User = get_user_model()
 
@@ -54,6 +54,7 @@ class Recipe(models.Model):
     image = models.ImageField(
         upload_to='recipes/',
         null=True,
+        blank=False,
         default=None,
         verbose_name='Изображение'
     )
@@ -69,7 +70,7 @@ class Recipe(models.Model):
         verbose_name='Теги'
     )
     cooking_time = models.SmallIntegerField(
-        validators=[time_check],
+        validators=[positive_check],
         verbose_name='Время приготовления'
     )
     is_in_shopping_cart = models.ManyToManyField(
@@ -118,7 +119,8 @@ class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
     amount = models.IntegerField(
-        null=True, verbose_name='Количество'
+        null=True, verbose_name='Количество',
+        validators=[positive_check],
     )
 
     class Meta:
@@ -141,7 +143,7 @@ class Favorite(models.Model):
     )
 
     class Meta:
-        default_related_name = 'favotrite'
+        default_related_name = 'favorite'
         constraints = [
             models.UniqueConstraint(
                 fields=('user', 'favorite'), name='favorite_recipe'
