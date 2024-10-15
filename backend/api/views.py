@@ -13,6 +13,7 @@ from rest_framework.permissions import (
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from api.serializers import (
+    AvatarSerializer,
     IngredientSerializer,
     RecipeCreateSerializer,
     RecipeSerializer,
@@ -23,16 +24,15 @@ from api.serializers import (
     TagSerializer,
     UserSerializer
 )
+from api.constants import CHARACTERS, URL_LENGTH
+from api.filters import IngredientFilter, RecipeTagFilter
+from api.pagination import PageCastomPaginator
+
 from backend.settings import DOMAIN
-from core.constants import CHARACTERS, URL_LENGTH
-from core.filters import IngredientFilter, RecipeTagFilter
-from core.pagination import PageCastomPaginator
 from foodgram.models import (
     Favorite, Ingredient, Recipe, RecipeIngredient, ShortURL, Tag
 )
 from users_authentication.models import UserSubscription
-from users_authentication.serializers import AvatarSerializer
-
 
 User = get_user_model()
 

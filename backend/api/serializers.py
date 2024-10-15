@@ -258,3 +258,17 @@ class ShortURLSerializer(serializers.ModelSerializer):
             if field.field_name == 'short_link':
                 field.field_name = 'short-link'
         return super().to_representation(instance)
+
+
+class AvatarSerializer(BaseUserSerializer):
+    avatar = Base64ImageField(required=False, allow_null=True)
+
+    class Meta(BaseUserSerializer.Meta):
+        model = User
+        fields = ('avatar',)
+
+    def validate(self, data):
+        avatar = data.get('avatar')
+        if avatar is None:
+            raise serializers.ValidationError()
+        return data
