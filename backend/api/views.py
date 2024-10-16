@@ -7,7 +7,6 @@ from django.shortcuts import get_object_or_404, redirect
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import (
     IsAuthenticated
 )
@@ -42,7 +41,7 @@ User = get_user_model()
 class UsersViewSet(DjoserUserViewSet):
     serializer_class = UserSerializer
     ordering = ('username', 'id')
-    pagination_class = PageNumberPagination
+    pagination_class = PageCastomPaginator
 
     def get_queryset(self):
         return User.objects.all()
@@ -116,14 +115,15 @@ class UsersViewSet(DjoserUserViewSet):
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == "DELETE":
-            try:
-                subscribe = UserSubscription.objects.filter(
-                    user=user, subscribed=sub
-                )
-                subscribe.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
-            except Exception:
+            if len(
+                UserSubscription.objects.filter(user=user, subscribed=sub)
+            ) == 0:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
+            subscribe = UserSubscription.objects.filter(
+                user=user, subscribed=sub
+            )
+            subscribe.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class BaseViewSet(
@@ -198,14 +198,15 @@ class RecipesViewSet(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == "DELETE":
-            try:
-                favorite = ShoppingCart.objects.filter(
-                    user=user, recipe=recipe
-                )
-                favorite.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
-            except Exception:
+            if len(
+                ShoppingCart.objects.filter(user=user, recipe=recipe)
+            ) == 0:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
+            favorite = ShoppingCart.objects.filter(
+                user=user, recipe=recipe
+            )
+            favorite.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
         detail=True, methods=['post', 'delete'],
@@ -226,12 +227,11 @@ class RecipesViewSet(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == "DELETE":
-            try:
-                favorite = Favorite.objects.filter(user=user, favorite=recipe)
-                favorite.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
-            except Exception:
+            if len(Favorite.objects.filter(user=user, favorite=recipe)) == 0:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
+            favorite = Favorite.objects.filter(user=user, favorite=recipe)
+            favorite.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
         detail=False, methods=['get'],
@@ -272,7 +272,6 @@ def redirection(request, short_link):
         full_link = get_object_or_404(
             ShortURL, short_link=short_link
         ).full_link
-        print(full_link)
         return redirect(full_link)
     except Http404:
         return Response(status=status.HTTP_404_NOT_FOUND)

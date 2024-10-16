@@ -23,11 +23,15 @@ class RecipeTagFilter(FilterSet):
 
     def filter_is_favorited(self, queryset, name, value):
         user = self.request.user
-        return queryset.filter(favorite__user=user)
+        if user.is_authenticated:
+            return queryset.filter(favorite__user=user)
+        return queryset
 
     def filter_is_in_shopping_cart(self, queryset, name, value):
         user = self.request.user
-        return queryset.filter(shopping_cart__user=user)
+        if user.is_authenticated:
+            return queryset.filter(shopping_cart__user=user)
+        return queryset
 
     class Meta:
         model = Recipe
