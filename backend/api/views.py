@@ -14,6 +14,9 @@ from rest_framework.permissions import (
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
+from api.filters import IngredientFilter, RecipeTagFilter
+from api.pagination import PageCastomPaginator
+from api.permissions import IsAutorOrReadOnly
 from api.serializers import (
     AvatarSerializer,
     FavoriteRecipeSerializer,
@@ -27,9 +30,6 @@ from api.serializers import (
     TagSerializer,
     UserSerializer
 )
-from api.filters import IngredientFilter, RecipeTagFilter
-from api.pagination import PageCastomPaginator
-from api.permissions import IsAutorOrReadOnly
 from core.constants import CHARACTERS, URL_LENGTH
 from foodgram.models import (
     Favorite, Ingredient, Recipe, RecipeIngredient, ShortURL, Tag
@@ -183,7 +183,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
             )
             serializer.is_valid(raise_exception=True)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
+
         elif request.method == "DELETE":
             try:
                 obj = ShoppingCart.objects.get(user=user, recipe=recipe)

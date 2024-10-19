@@ -153,14 +153,6 @@ class SubscriptionSerializer(UserSerializer):
             raise serializers.ValidationError()
         return data
 
-    # def create(self, validated_data):
-    #     print(validated_data)
-    #     user = self.context['request'].user
-    #     sub = self.kwargs['id']
-    #     print(sub, '***')
-    #     subscription = UserSubscription.objects.create(user=user, subscribed=sub)
-    #     return subscription
-
 
 class RecipeSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)

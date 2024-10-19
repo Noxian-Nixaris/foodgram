@@ -1,5 +1,4 @@
 from django_filters import (
-    # BooleanFilter,
     CharFilter,
     FilterSet,
     ModelMultipleChoiceFilter

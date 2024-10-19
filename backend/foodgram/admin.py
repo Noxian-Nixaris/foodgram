@@ -17,12 +17,6 @@ class IngredientInlineAdmin(admin.TabularInline):
     min_num = 1
 
 
-class TagInlineAdmin(admin.TabularInline):
-    model = Tag
-    extra = 0
-    min_num = 1
-
-
 class IngredientAdmin(admin.ModelAdmin):
     model = Ingredient
     list_display = ('id', 'name', 'measurement_unit')
@@ -37,7 +31,7 @@ class RecipeAdmin(admin.ModelAdmin):
     list_editable = ('name',)
     list_filter = ('tags',)
     search_fields = ('name', 'author')
-    inlines = [IngredientInlineAdmin,] # TagInlineAdmin]
+    inlines = [IngredientInlineAdmin]
 
     def get_tag(self, obj):
         return [tag.name for tag in obj.tags.all()]

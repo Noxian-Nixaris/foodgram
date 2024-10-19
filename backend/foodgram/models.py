@@ -4,6 +4,7 @@ from django.db import models
 from core.validators import max_check, positive_check
 from core.constants import MAX_DISPLAY_LENGTH, MAX_LENGTH
 
+
 User = get_user_model()
 
 
@@ -78,18 +79,6 @@ class Recipe(models.Model):
         validators=[positive_check, max_check],
         verbose_name='Время приготовления'
     )
-    # is_in_shopping_cart = models.ManyToManyField(
-    #     User,
-    #     through='ShoppingCart',
-    #     verbose_name='Покупки',
-    #     related_name='is_in_shopping_cart'
-    # )
-    # is_favorited = models.ManyToManyField(
-    #     User,
-    #     through='Favorite',
-    #     verbose_name='Избранное',
-    #     related_name='is_favorited'
-    # )
     pub_date = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата публикации'
