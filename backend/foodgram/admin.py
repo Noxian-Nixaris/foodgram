@@ -1,17 +1,14 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 from foodgram.models import (
     Favorite,
     Ingredient,
     Recipe,
     RecipeIngredient,
-    RecipeTag,
     ShoppingCart,
     ShortURL,
     Tag
 )
-from users_authentication.models import User
 
 
 class IngredientInlineAdmin(admin.TabularInline):
@@ -21,7 +18,7 @@ class IngredientInlineAdmin(admin.TabularInline):
 
 
 class TagInlineAdmin(admin.TabularInline):
-    model = RecipeTag
+    model = Tag
     extra = 0
     min_num = 1
 
@@ -40,7 +37,7 @@ class RecipeAdmin(admin.ModelAdmin):
     list_editable = ('name',)
     list_filter = ('tags',)
     search_fields = ('name', 'author')
-    inlines = [IngredientInlineAdmin, TagInlineAdmin]
+    inlines = [IngredientInlineAdmin,] # TagInlineAdmin]
 
     def get_tag(self, obj):
         return [tag.name for tag in obj.tags.all()]
@@ -60,16 +57,6 @@ class TagAdmin(admin.ModelAdmin):
     list_editable = ('name', 'slug')
 
 
-class UserAdmin(BaseUserAdmin):
-    model = User
-    list_display = (
-        'id', 'username', 'first_name', 'last_name',
-        'email', 'avatar', 'is_staff', 'is_superuser'
-    )
-    list_editable = ('first_name', 'last_name', 'is_staff', 'is_superuser')
-    search_fields = ('username', 'email')
-
-
 class ShoppingCartAdmin(admin.ModelAdmin):
     model = ShoppingCart
     list_display = ('user', 'recipe')
@@ -87,4 +74,3 @@ admin.site.register(Recipe, RecipeAdmin)
 admin.site.register(ShoppingCart, ShoppingCartAdmin)
 admin.site.register(ShortURL, ShortURLAdmin)
 admin.site.register(Tag, TagAdmin)
-admin.site.register(User, UserAdmin)

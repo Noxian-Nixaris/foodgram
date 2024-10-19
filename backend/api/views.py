@@ -1,5 +1,6 @@
 import random
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from django.http import FileResponse, Http404
@@ -12,8 +13,10 @@ from rest_framework.permissions import (
 )
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
+
 from api.serializers import (
     AvatarSerializer,
+    FavoriteRecipeSerializer,
     IngredientSerializer,
     RecipeCreateSerializer,
     RecipeSerializer,
@@ -24,16 +27,15 @@ from api.serializers import (
     TagSerializer,
     UserSerializer
 )
-from api.constants import CHARACTERS, URL_LENGTH
 from api.filters import IngredientFilter, RecipeTagFilter
 from api.pagination import PageCastomPaginator
 from api.permissions import IsAutorOrReadOnly
-
-from backend.settings import DOMAIN
+from core.constants import CHARACTERS, URL_LENGTH
 from foodgram.models import (
     Favorite, Ingredient, Recipe, RecipeIngredient, ShortURL, Tag
 )
 from users_authentication.models import UserSubscription
+
 
 User = get_user_model()
 
@@ -56,10 +58,6 @@ class UsersViewSet(DjoserUserViewSet):
                 user, data=request.data, partial=True,
                 context={'request': request}
             )
-            if 'avatar' not in self.request.data:
-                return Response(
-                    status=status.HTTP_400_BAD_REQUEST
-                )
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -73,8 +71,7 @@ class UsersViewSet(DjoserUserViewSet):
         url_path='me', permission_classes=[IsAuthenticated]
     )
     def me(self, request, *args, **kwargs):
-        pk = request.user.pk
-        object = get_object_or_404(User, pk=pk)
+        object = request.user
         serializer = UserSerializer(
             object, partial=True, context={'request': request})
         return Response(serializer.data)
@@ -105,24 +102,19 @@ class UsersViewSet(DjoserUserViewSet):
         if request.method == "POST":
             serializer = SubscriptionSerializer(
                 sub, data=request.data, partial=True,
-                context={'request': request})
+                context={'request': request, 'sub': sub}
+            )
             serializer.is_valid(raise_exception=True)
-            if user == sub:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-            try:
-                UserSubscription.objects.create(user=user, subscribed=sub)
-            except Exception:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == "DELETE":
-            if len(
-                UserSubscription.objects.filter(user=user, subscribed=sub)
-            ) == 0:
+            try:
+                obj = UserSubscription.objects.get(
+                    user=user, subscribed=sub
+                )
+                obj.delete()
+            except Exception:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
-            subscribe = UserSubscription.objects.filter(
-                user=user, subscribed=sub
-            )
-            subscribe.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -160,10 +152,9 @@ class RecipesViewSet(viewsets.ModelViewSet):
         url_path='get-link',
     )
     def get_link(self, request, *args, **kwargs):
-        full_link = f'{DOMAIN}recipes/{self.kwargs["pk"]}'
-        try:
-            link = get_object_or_404(ShortURL, full_link=full_link)
-        except Http404:
+        full_link = f'{settings.DOMAIN}recipes/{self.kwargs["pk"]}'
+        link = ShortURL.objects.filter(full_link=full_link).first()
+        if link is None:
             short_links = ShortURL.objects.all()
             while True:
                 short_link = ''.join(random.choices(CHARACTERS, k=URL_LENGTH))
@@ -174,7 +165,6 @@ class RecipesViewSet(viewsets.ModelViewSet):
                 full_link=full_link
             )
         serializer = ShortURLSerializer(link)
-
         return Response(serializer.data)
 
     @action(
@@ -188,24 +178,18 @@ class RecipesViewSet(viewsets.ModelViewSet):
             serializer = ShortRecipeSerializer(
                 recipe,
                 data=request.data,
-                context={'request': request},
+                context={'request': request, 'recipe': recipe},
                 partial=True
             )
             serializer.is_valid(raise_exception=True)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        elif request.method == "DELETE":
             try:
-                ShoppingCart.objects.create(user=user, recipe=recipe)
+                obj = ShoppingCart.objects.get(user=user, recipe=recipe)
+                obj.delete()
             except Exception:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        elif request.method == "DELETE":
-            if len(
-                ShoppingCart.objects.filter(user=user, recipe=recipe)
-            ) == 0:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-            favorite = ShoppingCart.objects.filter(
-                user=user, recipe=recipe
-            )
-            favorite.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
@@ -216,21 +200,18 @@ class RecipesViewSet(viewsets.ModelViewSet):
         recipe = get_object_or_404(Recipe, pk=self.kwargs['pk'])
         user = request.user
         if request.method == "POST":
-            serializer = ShortRecipeSerializer(
+            serializer = FavoriteRecipeSerializer(
                 recipe, data=request.data,
-                context={'request': request},
+                context={'request': request, 'recipe': recipe},
             )
             serializer.is_valid(raise_exception=True)
-            try:
-                Favorite.objects.create(user=user, favorite=recipe)
-            except Exception:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == "DELETE":
-            if len(Favorite.objects.filter(user=user, favorite=recipe)) == 0:
+            try:
+                obj = Favorite.objects.get(user=user, favorite=recipe)
+                obj.delete()
+            except Exception:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
-            favorite = Favorite.objects.filter(user=user, favorite=recipe)
-            favorite.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
@@ -251,10 +232,12 @@ class RecipesViewSet(viewsets.ModelViewSet):
                     ingreds[ingr_name] = ingr_amount
                 else:
                     ingreds[ingr_name] = ingreds[ingr_name] + ingr_amount
-        with open(f'media/carts/cart-{user}.txt', 'w') as file:
-            for items in ingreds:
-                file.write(f'{items} {ingreds.get(items)}' + '\n')
-        return FileResponse(open(f'media/carts/cart-{user}.txt', 'rb'))
+        cart = 'список' + '\n'
+        for items in ingreds:
+            cart += f'{items} {ingreds.get(items)}' + '\n'
+        return FileResponse(
+            cart, content_type='txt', filename=f'cart-{user}.txt'
+        )
 
 
 class IngredientViewSet(BaseViewSet):

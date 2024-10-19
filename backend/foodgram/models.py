@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.db import models
-from api.constants import MAX_DISPLAY_LENGTH, MAX_LENGTH
-from api.validators import positive_check
+
+from core.validators import max_check, positive_check
+from core.constants import MAX_DISPLAY_LENGTH, MAX_LENGTH
 
 User = get_user_model()
 
@@ -39,6 +40,11 @@ class Ingredient(models.Model):
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
         ordering = ('name', 'id')
+        constraints = [
+            models.UniqueConstraint(
+                fields=('name', 'measurement_unit'), name='name_unit'
+            )
+        ]
 
     def __str__(self):
         return self.name
@@ -66,25 +72,24 @@ class Recipe(models.Model):
     )
     tags = models.ManyToManyField(
         Tag,
-        through='RecipeTag',
         verbose_name='Теги'
     )
     cooking_time = models.SmallIntegerField(
-        validators=[positive_check],
+        validators=[positive_check, max_check],
         verbose_name='Время приготовления'
     )
-    is_in_shopping_cart = models.ManyToManyField(
-        User,
-        through='ShoppingCart',
-        verbose_name='Покупки',
-        related_name='is_in_shopping_cart'
-    )
-    is_favorited = models.ManyToManyField(
-        User,
-        through='Favorite',
-        verbose_name='Избранное',
-        related_name='is_favorited'
-    )
+    # is_in_shopping_cart = models.ManyToManyField(
+    #     User,
+    #     through='ShoppingCart',
+    #     verbose_name='Покупки',
+    #     related_name='is_in_shopping_cart'
+    # )
+    # is_favorited = models.ManyToManyField(
+    #     User,
+    #     through='Favorite',
+    #     verbose_name='Избранное',
+    #     related_name='is_favorited'
+    # )
     pub_date = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата публикации'
@@ -98,21 +103,6 @@ class Recipe(models.Model):
 
     def __str__(self):
         return self.name[:MAX_DISPLAY_LENGTH]
-
-
-class RecipeTag(models.Model):
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f'{self.recipe} {self.tag}'
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=('recipe', 'tag'), name='tag_recipe'
-            )
-        ]
 
 
 class RecipeIngredient(models.Model):

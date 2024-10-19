@@ -1,6 +1,12 @@
-from django_filters import CharFilter, FilterSet
+from django_filters import (
+    # BooleanFilter,
+    CharFilter,
+    FilterSet,
+    ModelMultipleChoiceFilter
+)
+from django_filters.rest_framework import BooleanFilter
 
-from foodgram.models import Recipe
+from foodgram.models import Recipe, Tag
 
 
 class IngredientFilter(FilterSet):
@@ -8,18 +14,23 @@ class IngredientFilter(FilterSet):
 
 
 class RecipeTagFilter(FilterSet):
-    is_in_shopping_cart = CharFilter(
-        field_name='is_in_shopping_cart', method='filter_is_in_shopping_cart'
+    is_in_shopping_cart = BooleanFilter(
+        field_name='shopping_cart',
+        method='filter_is_in_shopping_cart'
     )
-    is_favorited = CharFilter(
-        field_name='is_favorited', method='filter_is_favorited'
+    is_favorited = BooleanFilter(
+        field_name='favorite',
+        method='filter_is_favorited'
     )
-    author = CharFilter(field_name='author')
-    tags = CharFilter(field_name='tags', method='filter_tags')
+    tags = ModelMultipleChoiceFilter(
+        field_name='tags__slug',
+        to_field_name='slug',
+        queryset=Tag.objects.all()
+    )
 
-    def filter_tags(self, queryset, name, value):
-        tags = dict(self.request.query_params).get('tags')
-        return queryset.filter(tags__slug__in=tags).distinct()
+    class Meta:
+        model = Recipe
+        fields = ['tags', 'is_in_shopping_cart', 'is_favorited', 'author']
 
     def filter_is_favorited(self, queryset, name, value):
         user = self.request.user
@@ -32,7 +43,3 @@ class RecipeTagFilter(FilterSet):
         if user.is_authenticated:
             return queryset.filter(shopping_cart__user=user)
         return queryset
-
-    class Meta:
-        model = Recipe
-        fields = ['tags', 'is_in_shopping_cart', 'is_favorited', 'author']

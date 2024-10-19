@@ -1,14 +1,14 @@
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
-from api.constants import MAX_EMAIL_LENGTH, MAX_NAME_LENGTH
+
+from core.constants import MAX_EMAIL_LENGTH, MAX_NAME_LENGTH
 
 
 class User(AbstractUser):
     first_name = models.CharField(max_length=MAX_NAME_LENGTH, blank=False)
     last_name = models.CharField(max_length=MAX_NAME_LENGTH, blank=False)
     email = models.EmailField(
-        blank=False,
         max_length=MAX_EMAIL_LENGTH,
         unique=True,
         verbose_name='email address'
@@ -45,7 +45,11 @@ class UserSubscription(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=('user', 'subscribed'), name='subscription'
-            )
+            ),
+            models.CheckConstraint(
+                check=~models.Q(user=models.F('subscribed')),
+                name='check_self_subscribe'
+            ),
         ]
 
     def clean(self):

@@ -1,8 +1,6 @@
 import os
 from pathlib import Path
 
-from api.constants import PAGE_SIZE
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'key')
@@ -62,6 +60,14 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
+
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 DATABASES = {
     'default': {
@@ -133,7 +139,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PAGINATION_CLASS': 'api.pagination.PageCastomPaginator',
-    'PAGE_SIZE': PAGE_SIZE
+    'PAGE_SIZE': 6
 }
 
 DJOSER = {

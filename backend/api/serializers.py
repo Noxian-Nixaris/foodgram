@@ -1,26 +1,26 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
 from djoser.serializers import UserSerializer as BaseUserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers, exceptions
-from api.validators import (
+from rest_framework.generics import get_object_or_404
+
+from core.validators import (
     amount_validation,
     not_empty_validation,
     positive_check
 )
-
-from backend.settings import DOMAIN
 from foodgram.models import (
     Favorite,
     Ingredient,
     Recipe,
-    RecipeTag,
     RecipeIngredient,
     ShoppingCart,
     ShortURL,
     Tag
 )
 from users_authentication.models import UserSubscription
+
 
 User = get_user_model()
 
@@ -70,6 +70,32 @@ class ShortRecipeSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'image', 'cooking_time')
         read_only_fields = ('id', 'name', 'image', 'cooking_time')
 
+    def validate(self, data):
+        recipe = self.context['recipe']
+        user = self.context['request'].user
+        try:
+            ShoppingCart.objects.create(user=user, recipe=recipe)
+        except Exception:
+            raise serializers.ValidationError()
+        return data
+
+
+class FavoriteRecipeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+        read_only_fields = ('id', 'name', 'image', 'cooking_time')
+
+    def validate(self, data):
+        recipe = self.context['recipe']
+        user = self.context['request'].user
+        try:
+            Favorite.objects.create(user=user, favorite=recipe)
+        except Exception:
+            raise serializers.ValidationError()
+        return data
+
 
 class UserSerializer(BaseUserSerializer):
     is_subscribed = serializers.SerializerMethodField()
@@ -115,6 +141,25 @@ class SubscriptionSerializer(UserSerializer):
 
     def get_recipes_count(self, obj):
         return Recipe.objects.filter(author=obj.pk).count()
+
+    def validate(self, data):
+        user = self.context['request'].user
+        sub = self.context['sub']
+        if user == sub:
+            raise serializers.ValidationError()
+        try:
+            UserSubscription.objects.create(user=user, subscribed=sub)
+        except Exception:
+            raise serializers.ValidationError()
+        return data
+
+    # def create(self, validated_data):
+    #     print(validated_data)
+    #     user = self.context['request'].user
+    #     sub = self.kwargs['id']
+    #     print(sub, '***')
+    #     subscription = UserSubscription.objects.create(user=user, subscribed=sub)
+    #     return subscription
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -186,22 +231,46 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             'name', 'image', 'text', 'cooking_time'
         )
 
-    def create(self, validated_data):
-        tags_data = validated_data.pop('tags')
+    def validate(self, data):
+        try:
+            tags_data = data['tags']
+        except Exception:
+            print('tags')
+            raise serializers.ValidationError()
         amount_validation(tags_data)
-        ingredients_data = validated_data.pop('recipes_ingredients')
+
+        try:
+            ingredients_data = data['recipes_ingredients']
+        except Exception:
+            print('recipes_ingredients')
+            raise serializers.ValidationError()
         ingredients = [data.get('id') for data in ingredients_data]
         amount_validation(ingredients)
+
+        try:
+            image = data['image']
+        except Exception:
+            print('image')
+            raise serializers.ValidationError()
+        not_empty_validation(image)
+
+        try:
+            cooking_time = data['cooking_time']
+        except Exception:
+            print('cooking_time')
+            raise serializers.ValidationError()
+        positive_check(cooking_time)
+
+        return data
+
+    def create(self, validated_data):
+        tags_data = validated_data.pop('tags')
+        ingredients_data = validated_data.pop('recipes_ingredients')
         if not self.context['request'].user.is_authenticated:
             raise exceptions.NotAuthenticated()
-        image = validated_data.get('image')
-        not_empty_validation(image)
-        cooking_time = validated_data.get('cooking_time')
-        positive_check(cooking_time)
-        data = Recipe.objects.create(
+        recipe = Recipe.objects.create(
             author=self.context['request'].user, **validated_data
         )
-        recipe = get_object_or_404(Recipe, pk=data.pk)
         recipe.tags.set(tags_data)
         ingredient_set = (
             RecipeIngredient(
@@ -211,23 +280,13 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             ) for value in ingredients_data
         )
         RecipeIngredient.objects.bulk_create(ingredient_set)
-        return get_object_or_404(Recipe, pk=data.pk)
+        return recipe
 
     def update(self, instance, validated_data):
-        try:
-            tags_data = validated_data.pop('tags')
-        except Exception:
-            raise serializers.ValidationError()
-        amount_validation(tags_data)
-        RecipeTag.objects.filter(recipe=instance).delete()
+        tags_data = validated_data.pop('tags')
+        instance.tags.clear()
         instance.tags.set(tags_data)
-        try:
-            ingredients_data = validated_data.pop('recipes_ingredients')
-        except Exception:
-            raise serializers.ValidationError()
-        amount_validation(
-            [data.get('id') for data in ingredients_data]
-        )
+        ingredients_data = validated_data.pop('recipes_ingredients')
         RecipeIngredient.objects.filter(recipe=instance).delete()
         ingredient_set = (
             RecipeIngredient(
@@ -236,10 +295,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 amount=value.get('amount')
             ) for value in ingredients_data
         )
-        image = validated_data.get('image')
-        not_empty_validation(image)
-        cooking_time = validated_data.get('cooking_time')
-        positive_check(cooking_time)
         RecipeIngredient.objects.bulk_create(ingredient_set)
         Recipe.objects.filter(pk=instance.pk).update(**validated_data)
         return get_object_or_404(Recipe, pk=instance.pk)
@@ -277,7 +332,7 @@ class ShortURLSerializer(serializers.ModelSerializer):
         fields = ('short_link',)
 
     def get_short_link(self, obj):
-        return f'{DOMAIN}s/{obj.short_link}'
+        return f'{settings.DOMAIN}s/{obj.short_link}'
 
     def to_representation(self, instance):
         fields = self._readable_fields
@@ -295,7 +350,6 @@ class AvatarSerializer(BaseUserSerializer):
         fields = ('avatar',)
 
     def validate(self, data):
-        avatar = data.get('avatar')
-        if avatar is None:
+        if 'avatar' not in data or data.get('avatar') is None:
             raise serializers.ValidationError()
         return data
