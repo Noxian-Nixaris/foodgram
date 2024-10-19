@@ -227,29 +227,25 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         try:
             tags_data = data['tags']
         except Exception:
-            print('tags')
             raise serializers.ValidationError()
         amount_validation(tags_data)
 
         try:
             ingredients_data = data['recipes_ingredients']
         except Exception:
-            print('recipes_ingredients')
             raise serializers.ValidationError()
         ingredients = [data.get('id') for data in ingredients_data]
         amount_validation(ingredients)
 
         try:
             image = data['image']
+            not_empty_validation(image)
         except Exception:
-            print('image')
-            raise serializers.ValidationError()
-        not_empty_validation(image)
+            pass
 
         try:
             cooking_time = data['cooking_time']
         except Exception:
-            print('cooking_time')
             raise serializers.ValidationError()
         positive_check(cooking_time)
 
