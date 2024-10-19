@@ -14,7 +14,6 @@ def max_check(num):
 
 def amount_validation(data):
     if len(data) != len(set(data)) or len(data) == 0:
-        print('not amount')
         raise serializers.ValidationError(data)
 
 

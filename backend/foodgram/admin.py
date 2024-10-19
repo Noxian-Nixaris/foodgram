@@ -26,7 +26,7 @@ class IngredientAdmin(admin.ModelAdmin):
 
 class RecipeAdmin(admin.ModelAdmin):
     model = Recipe
-    list_display = ('id', 'name', 'author', 'get_tag', 'pub_date')
+    list_display = ('id', 'name', 'author', 'get_tag', 'pub_date', 'image')
     readonly_fields = ('add_counter',)
     list_editable = ('name',)
     list_filter = ('tags',)
