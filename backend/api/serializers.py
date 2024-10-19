@@ -7,7 +7,6 @@ from rest_framework.generics import get_object_or_404
 
 from core.validators import (
     amount_validation,
-    not_empty_validation,
     positive_check
 )
 from foodgram.models import (
