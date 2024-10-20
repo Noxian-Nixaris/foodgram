@@ -61,10 +61,9 @@ class UsersViewSet(DjoserUserViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        elif request.method == "DELETE":
-            avatar = user.avatar
-            avatar.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+        avatar = user.avatar
+        avatar.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
         detail=False, methods=['get'],

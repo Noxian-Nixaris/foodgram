@@ -6,7 +6,6 @@ from rest_framework import serializers, exceptions
 from rest_framework.generics import get_object_or_404
 
 from core.validators import (
-    amount_validation,
     positive_check
 )
 from foodgram.models import (
@@ -213,6 +212,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         'get_is_in_shopping_cart',
         read_only=True
     )
+    cooking_time = serializers.IntegerField()
 
     class Meta:
         model = Recipe
@@ -223,36 +223,32 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         )
 
     def validate(self, data):
-        try:
-            tags_data = data['tags']
-        except Exception:
-            raise serializers.ValidationError()
-        amount_validation(tags_data)
+        tags_data = data.get('tags')
+        if not tags_data:
+            raise serializers.ValidationError('Поле тег пустое')
+        if len(tags_data) != len(set(tags_data)):
+            raise serializers.ValidationError('Поле тег содержит дубликаты')
 
-        try:
-            ingredients_data = data['recipes_ingredients']
-        except Exception:
-            raise serializers.ValidationError()
+        ingredients_data = data.get('recipes_ingredients')
+        if not ingredients_data:
+            raise serializers.ValidationError('Поле ингридиентов пустое')
         ingredients = [data.get('id') for data in ingredients_data]
-        amount_validation(ingredients)
+        if len(ingredients) != len(set(ingredients)) or len(ingredients) == 0:
+            raise serializers.ValidationError(
+                'Поле ингридиентов пустое или содержит дубликаты'
+            )
 
         if 'image' in data:
             if data.get('image') is None:
-                raise serializers.ValidationError()
+                raise serializers.ValidationError('Пустая картинка')
 
-        try:
-            cooking_time = data['cooking_time']
-        except Exception:
-            raise serializers.ValidationError()
-        positive_check(cooking_time)
+        positive_check(data['cooking_time'])
 
         return data
 
     def create(self, validated_data):
         tags_data = validated_data.pop('tags')
         ingredients_data = validated_data.pop('recipes_ingredients')
-        if not self.context['request'].user.is_authenticated:
-            raise exceptions.NotAuthenticated()
         recipe = Recipe.objects.create(
             author=self.context['request'].user, **validated_data
         )

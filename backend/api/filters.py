@@ -1,9 +1,9 @@
-from django_filters import (
+from django_filters.rest_framework import (
+    BooleanFilter,
     CharFilter,
     FilterSet,
     ModelMultipleChoiceFilter
 )
-from django_filters.rest_framework import BooleanFilter
 
 from foodgram.models import Recipe, Tag
 
@@ -32,13 +32,15 @@ class RecipeTagFilter(FilterSet):
         fields = ['tags', 'is_in_shopping_cart', 'is_favorited', 'author']
 
     def filter_is_favorited(self, queryset, name, value):
-        user = self.request.user
-        if user.is_authenticated:
-            return queryset.filter(favorite__user=user)
+        if value:
+            user = self.request.user
+            if user.is_authenticated:
+                return queryset.filter(favorite__user=user)
         return queryset
 
     def filter_is_in_shopping_cart(self, queryset, name, value):
-        user = self.request.user
-        if user.is_authenticated:
-            return queryset.filter(shopping_cart__user=user)
+        if value:
+            user = self.request.user
+            if user.is_authenticated:
+                return queryset.filter(shopping_cart__user=user)
         return queryset
