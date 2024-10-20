@@ -107,15 +107,14 @@ class UsersViewSet(DjoserUserViewSet):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == "DELETE":
-            try:
-                obj = UserSubscription.objects.get(
-                    user=user, subscribed=sub
-                )
+            obj = UserSubscription.objects.filter(
+                user=user, subscribed=sub
+            ).first()
+            if obj is not None:
                 obj.delete()
-            except Exception:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+            
 
 class BaseViewSet(
     mixins.RetrieveModelMixin,
@@ -184,12 +183,13 @@ class RecipesViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         elif request.method == "DELETE":
-            try:
-                obj = ShoppingCart.objects.get(user=user, recipe=recipe)
+            obj = ShoppingCart.objects.filter(
+                user=user, recipe=recipe
+            ).first()
+            if obj is not None:
                 obj.delete()
-            except Exception:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-            return Response(status=status.HTTP_204_NO_CONTENT)
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(
         detail=True, methods=['post', 'delete'],
@@ -206,12 +206,13 @@ class RecipesViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == "DELETE":
-            try:
-                obj = Favorite.objects.get(user=user, favorite=recipe)
+            obj = Favorite.objects.filter(
+                user=user, favorite=recipe
+            ).first()
+            if obj is not None:
                 obj.delete()
-            except Exception:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-            return Response(status=status.HTTP_204_NO_CONTENT)
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(
         detail=False, methods=['get'],
@@ -228,12 +229,15 @@ class RecipesViewSet(viewsets.ModelViewSet):
                 ingr_name = recipe.ingredient.name
                 ingr_amount = recipe.amount
                 if ingr_name not in ingreds:
-                    ingreds[ingr_name] = ingr_amount
+                    ingreds[ingr_name] = [
+                        ingr_amount, recipe.ingredient.measurement_unit
+                    ]
                 else:
-                    ingreds[ingr_name] = ingreds[ingr_name] + ingr_amount
+                    ingreds[ingr_name][0] += ingr_amount
         cart = 'список' + '\n'
         for items in ingreds:
-            cart += f'{items} {ingreds.get(items)}' + '\n'
+            cart += (f'{items} {ingreds[items][0]}'
+                     f' {ingreds.get(items)[1]}' + '\n')
         return FileResponse(
             cart, content_type='txt', filename=f'cart-{user}.txt'
         )
